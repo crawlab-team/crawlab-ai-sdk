@@ -1,0 +1,5 @@
+Scrapy>=2.4
+requests~=2.31.0
+pytest>=8.0.0
+pandas>=2.2
+bs4==0.0.2
