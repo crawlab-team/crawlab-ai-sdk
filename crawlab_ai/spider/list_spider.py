@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 from urllib.parse import urljoin
 
 import requests
@@ -9,8 +9,8 @@ from crawlab_ai.utils.env import get_api_endpoint
 from crawlab_ai.utils.logger import logger
 
 
-class ListSpider(object):
-    def __init__(self, url: str, fields: Optional[List[str] | List[dict]] = None):
+class ListSpiderThreaded(object):
+    def __init__(self, url: str, fields: List[dict] = None):
         self.url = url
         self.fields = fields
         self.data = []
@@ -19,7 +19,6 @@ class ListSpider(object):
     def _fetch_rules(self):
         res = requests.post(get_api_endpoint() + '/list_rules', json={
             'url': self.url,
-            'fields': self.fields,
         })
         data = res.json()
         self._list_element_css_selector = data['model_list'][0]['list_model']['list_element_css_selector']
@@ -65,13 +64,27 @@ class ListSpider(object):
                 return urljoin(url, next_page_href)
 
 
-def read_list(url: str, fields: Optional[List[str] | List[dict]] = None) -> DataFrame:
-    spider = ListSpider(url, fields)
+def _get_fields(fields: List[str] | dict = None) -> Optional[List[str] | List[dict]]:
+    if isinstance(fields, list):
+        return fields
+    elif isinstance(fields, dict):
+        return [{'name': k, 'description': v} for k, v in fields.items()]
+    else:
+        return None
+
+
+def read_list(url: str, fields: List[str] | dict = None) -> DataFrame:
+    spider = ListSpiderThreaded(url=url, fields=_get_fields(fields))
     spider.crawl(url)
     return DataFrame(spider.data)
 
 
 if __name__ == '__main__':
-    df = read_list('https://books.toscrape.com', ['product_name', 'product_price', 'product_link'])
-    # df = read_list('https://quotes.toscrape.com')
+    df = read_list('https://quotes.toscrape.com')
+    print(df)
+    df = read_list('https://36kr.com/', [
+        'title',
+        'author',
+        'url',
+    ])
     print(df)
