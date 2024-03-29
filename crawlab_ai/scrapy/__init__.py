@@ -1,1 +1,1 @@
-from .list_spider import ListSpider
+from .list_spider import ScrapyListSpider

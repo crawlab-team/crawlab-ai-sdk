@@ -9,16 +9,35 @@ from crawlab_ai.utils.env import get_api_endpoint
 from crawlab_ai.utils.logger import logger
 
 
-class ListSpiderThreaded(object):
-    def __init__(self, url: str, fields: List[dict] = None):
+class ListSpider(object):
+    """
+    The ListSpider class is responsible for crawling a given URL and extracting data based on specified fields.
+    It fetches rules from an API endpoint, which are used to identify list elements and fields within the webpage.
+    The class also supports pagination by identifying the next page element and recursively crawling until no more pages
+     are found.
+
+    Attributes:
+        url (str): The URL to be crawled.
+        fields (List[dict]): A list of fields to be extracted from each list element.
+        data (List[dict]): A list to store the extracted data from each list element.
+        get_html (function): A function to fetch the HTML content of a webpage. Defaults to the _get_html method.
+
+    Methods:
+        crawl(url: str): Starts the crawling process for the given URL.
+    """
+
+    def __init__(self, url: str, fields: List[dict] = None, get_html=None):
         self.url = url
         self.fields = fields
         self.data = []
+        self.get_html = get_html or self._get_html
         self._fetch_rules()
 
     def _fetch_rules(self):
+        logger.info('Fetching rules for URL: ' + self.url)
         res = requests.post(get_api_endpoint() + '/list_rules', json={
             'url': self.url,
+            'fields': self.fields,
         })
         data = res.json()
         self._list_element_css_selector = data['model_list'][0]['list_model']['list_element_css_selector']
@@ -36,10 +55,15 @@ class ListSpiderThreaded(object):
                     future = executor.submit(self._fetch_data, next_page_url)
                     next_page_url = future.result()
 
+    @staticmethod
+    def _get_html(url):
+        res = requests.get(url)
+        return res.text
+
     def _fetch_data(self, url):
         logger.info('Crawling URL: ' + url)
-        res = requests.get(url)
-        soup = BeautifulSoup(res.text, 'html.parser')
+        html = self.get_html(url)
+        soup = BeautifulSoup(html, 'html.parser')
         list_items = soup.select(self._list_element_css_selector)
         for item in list_items:
             row = {}
@@ -73,10 +97,26 @@ def _get_fields(fields: List[str] | dict = None) -> Optional[List[str] | List[di
         return None
 
 
-def read_list(url: str, fields: List[str] | dict = None) -> DataFrame:
-    spider = ListSpiderThreaded(url=url, fields=_get_fields(fields))
+def read_list(url: str, fields: List[str] | dict = None, get_html=None, as_dataframe=True) -> DataFrame | List[dict]:
+    """
+    Reads a list of items from a webpage and returns a DataFrame.
+
+    Args:
+        url (str): The URL to be crawled.
+        fields (List[str] | dict): A list of fields to be extracted from each list element.
+        get_html (function): A function to fetch the HTML content of a webpage. Defaults to the requests library.
+        as_dataframe (bool): Whether to return the extracted data as a DataFrame. Defaults to True.
+
+    Returns:
+        DataFrame: A DataFrame containing the extracted data.
+
+    """
+    spider = ListSpider(url=url, fields=_get_fields(fields), get_html=get_html)
     spider.crawl(url)
-    return DataFrame(spider.data)
+    if as_dataframe:
+        return DataFrame(spider.data)
+    else:
+        return spider.data
 
 
 if __name__ == '__main__':
