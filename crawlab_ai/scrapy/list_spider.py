@@ -9,6 +9,42 @@ from crawlab_ai.utils.logger import logger
 
 
 class ScrapyListSpider(BaseSpider):
+    """
+    The ScrapyListSpider class is responsible for crawling a given URL and extracting data based on specified fields.
+    It fetches rules from an API endpoint, which are used to identify list elements and fields within the webpage.
+    The class also supports pagination by identifying the next page element and recursively crawling until no more pages
+    are found.
+
+    Attributes:
+        fields (List[dict]): A list of fields to be extracted from each list element.
+
+    Methods:
+        parse(response: Response, **kwargs: Any) -> Iterable: Parses the response object and extracts data from the list
+            elements.
+
+    Usage:
+        class MyListSpider(ScrapyListSpider):
+            name = 'my_list_spider'
+            start_urls = ['https://quotes.toscrape.com']
+            fields = [
+                {
+                    'name': 'author',
+                    'element_css_selector': '.author',
+                    'is_text': True,
+                },
+                {
+                    'name': 'quote',
+                    'element_css_selector': '.text',
+                    'is_text': True,
+                },
+                {
+                    'name': 'tags',
+                    'element_css_selector': '.tag',
+                    'is_text': True,
+                },
+            ]
+
+    """
     _fields: List[dict] = None
     _list_element_css_selector: str = None
     _next_page_element_css_selector: str = None
