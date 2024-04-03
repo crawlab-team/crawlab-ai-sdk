@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='crawlab-ai',
-    version='0.0.1',
+    version='0.0.2',
     packages=['crawlab_ai'],
     url='https://github.com/crawlab-team/crawlab-ai-sdk',
     license='MIT',
