@@ -49,6 +49,10 @@ class ListSpider(object):
         self._list_element_css_selector = data['model_list'][0]['list_model']['list_element_css_selector']
         self._fields = data['model_list'][0]['list_model']['fields']
         self._next_page_element_css_selector = data['model_list'][0]['next_page_element_css_selector']
+        logger.info('Rules fetched successfully for URL: ' + self.url)
+        logger.info('List element CSS selector: ' + self._list_element_css_selector)
+        logger.info('Fields: ' + str(self._fields))
+        logger.info('Next page element CSS selector: ' + str(self._next_page_element_css_selector))
 
     def crawl(self, url):
         futures = []

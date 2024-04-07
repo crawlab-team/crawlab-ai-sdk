@@ -1,12 +1,18 @@
 # Crawlab AI SDK
 
-This is the Python SDK for Crawlab AI.
+This is the Python SDK for [Crawlab AI](https://www.crawlab.cn/ai), an AI-powered web scraping platform maintained
+by [Crawlab](https://www.crawlab.cn).
 
 ## Installation
 
 ```bash
 pip install crawlab-ai
 ```
+
+## Pre-requisites
+
+An API token is required to use this SDK. You can get the API token from
+the [Crawlab official website](https://dev.crawlab.io/ai).
 
 ## Usage
 
@@ -26,7 +32,7 @@ print(df)
 fields = ["title", "content"]
 df = read_list(url=url, fields=fields)
 
-# You can also return a list of dictionaries
+# You can also return a list of dictionaries instead of a DataFrame
 data = read_list(url=url, as_dataframe=False)
 print(data)
 ```
