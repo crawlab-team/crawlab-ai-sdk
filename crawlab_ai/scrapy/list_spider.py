@@ -5,6 +5,7 @@ from scrapy import Request
 from scrapy.http import Response
 
 from crawlab_ai.scrapy.base_spider import BaseSpider
+from crawlab_ai.utils.auth import get_auth_headers
 from crawlab_ai.utils.logger import logger
 
 
@@ -55,16 +56,27 @@ class ScrapyListSpider(BaseSpider):
         super(ScrapyListSpider, self).__init__()
         self._fetch_rules()
 
+    def start_requests(self) -> Iterable[Request]:
+        yield Request(self.start_urls[0], self.parse)
+
     def _fetch_rules(self):
         logger.info('Fetching rules for URL: ' + self.start_urls[0])
-        res = requests.post(self._api_endpoint + '/list_rules', json={
-            'url': self.start_urls[0],
-            'fields': self.fields,
-        })
+        res = requests.post(
+            url=self._api_endpoint + '/list_rules',
+            headers=get_auth_headers(),
+            json={
+                'url': self.start_urls[0],
+                'fields': self.fields,
+            },
+        )
         data = res.json()
         self._list_element_css_selector = data['model_list'][0]['list_model']['list_element_css_selector']
         self._fields = data['model_list'][0]['list_model']['fields']
         self._next_page_element_css_selector = data['model_list'][0]['next_page_element_css_selector']
+        logger.info('Rules fetched.')
+        logger.info('List element CSS selector: ' + self._list_element_css_selector)
+        logger.info('Fields: ' + str(self._fields))
+        logger.info('Next page element CSS selector: ' + str(self._next_page_element_css_selector))
 
     def parse(self, response: Response, **kwargs: Any) -> Any:
         list_items = response.css(self._list_element_css_selector)
@@ -100,3 +112,4 @@ if __name__ == '__main__':
 
     process = CrawlerProcess(get_project_settings())
     process.crawl(TestScrapyListSpider)
+    process.start()

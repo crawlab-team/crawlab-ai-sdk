@@ -5,6 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from pandas import DataFrame
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from crawlab_ai.utils.auth import get_auth_headers
 from crawlab_ai.utils.env import get_api_endpoint
 from crawlab_ai.utils.logger import logger
 
@@ -35,10 +37,14 @@ class ListSpider(object):
 
     def _fetch_rules(self):
         logger.info('Fetching rules for URL: ' + self.url)
-        res = requests.post(get_api_endpoint() + '/list_rules', json={
-            'url': self.url,
-            'fields': self.fields,
-        })
+        res = requests.post(
+            url=get_api_endpoint() + '/list_rules',
+            headers=get_auth_headers(),
+            json={
+                'url': self.url,
+                'fields': self.fields,
+            },
+        )
         data = res.json()
         self._list_element_css_selector = data['model_list'][0]['list_model']['list_element_css_selector']
         self._fields = data['model_list'][0]['list_model']['fields']
@@ -122,9 +128,9 @@ def read_list(url: str, fields: List[str] | dict = None, get_html=None, as_dataf
 if __name__ == '__main__':
     df = read_list('https://quotes.toscrape.com')
     print(df)
-    df = read_list('https://36kr.com/', [
-        'title',
-        'author',
-        'url',
-    ])
-    print(df)
+    # df = read_list('https://36kr.com/', [
+    #     'title',
+    #     'author',
+    #     'url',
+    # ])
+    # print(df)
