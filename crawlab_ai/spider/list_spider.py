@@ -6,12 +6,13 @@ from bs4 import BeautifulSoup
 from pandas import DataFrame
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from crawlab_ai.spider.base import BaseSpider
 from crawlab_ai.utils.auth import get_auth_headers
 from crawlab_ai.utils.env import get_api_endpoint
 from crawlab_ai.utils.logger import logger
 
 
-class ListSpider(object):
+class ListSpider(BaseSpider):
     """
     The ListSpider class is responsible for crawling a given URL and extracting data based on specified fields.
     It fetches rules from an API endpoint, which are used to identify list elements and fields within the webpage.
@@ -29,35 +30,51 @@ class ListSpider(object):
     """
 
     def __init__(self, url: str, fields: List[dict] = None, get_html=None):
+        super().__init__(url, get_html)
+        self.rules = None
         self.url = url
         self.fields = fields
         self.data = []
-        self.get_html = get_html or self._get_html
-        self._fetch_rules()
+        self.fetch_rules()
 
-    def _fetch_rules(self):
-        logger.info('Fetching rules for URL: ' + self.url)
+    @property
+    def list_element_css_selector(self):
+        return self.rules["list_model"]["list_element_css_selector"]
+
+    @property
+    def item_fields(self):
+        return self.rules["list_model"]["fields"]
+
+    @property
+    def next_page_element_css_selector(self):
+        return self.rules["next_page_element_css_selector"]
+
+    def fetch_rules(self):
+        logger.info("Fetching rules for URL: " + self.url)
         res = requests.post(
-            url=get_api_endpoint() + '/list_rules',
+            url=get_api_endpoint() + "/rules/list",
             headers=get_auth_headers(),
             json={
-                'url': self.url,
-                'fields': self.fields,
+                "url": self.url,
+                "fields": self.fields,
             },
         )
         data = res.json()
-        self._list_element_css_selector = data['model_list'][0]['list_model']['list_element_css_selector']
-        self._fields = data['model_list'][0]['list_model']['fields']
-        self._next_page_element_css_selector = data['model_list'][0]['next_page_element_css_selector']
-        logger.info('Rules fetched successfully for URL: ' + self.url)
-        logger.info('List element CSS selector: ' + self._list_element_css_selector)
-        logger.info('Fields: ' + str(self._fields))
-        logger.info('Next page element CSS selector: ' + str(self._next_page_element_css_selector))
+        if res.status_code != 200:
+            raise Exception("Failed to fetch rules for URL: " + self.url)
+        self.rules = data["model_list"][0]
+        logger.info("Rules fetched successfully for URL: " + self.url)
+        logger.info("List element CSS selector: " + self.list_element_css_selector)
+        logger.info("Fields: " + str(self.item_fields))
+        logger.info(
+            "Next page element CSS selector: "
+            + str(self.next_page_element_css_selector)
+        )
 
-    def crawl(self, url):
+    def crawl(self):
         futures = []
         with ThreadPoolExecutor(max_workers=5) as executor:
-            futures.append(executor.submit(self._fetch_data, url))
+            futures.append(executor.submit(self._fetch_data, self.url))
 
             for future in as_completed(futures):
                 next_page_url = future.result()
@@ -71,30 +88,30 @@ class ListSpider(object):
         return res.text
 
     def _fetch_data(self, url):
-        logger.info('Crawling URL: ' + url)
+        logger.info("Crawling URL: " + url)
         html = self.get_html(url)
-        soup = BeautifulSoup(html, 'html.parser')
-        list_items = soup.select(self._list_element_css_selector)
+        soup = BeautifulSoup(html, "html.parser")
+        list_items = soup.select(self.list_element_css_selector)
         for item in list_items:
             row = {}
-            for field in self._fields:
-                name = field['name']
-                field_element = item.select_one(field['element_css_selector'])
+            for field in self.item_fields:
+                name = field["name"]
+                field_element = item.select_one(field["element_css_selector"])
                 if not field_element:
                     continue
-                if field['is_text']:
+                if field["is_text"]:
                     value = field_element.text.strip()
                 else:
-                    value = field_element.get(field['attribute'])
+                    value = field_element.get(field["attribute"])
                 row[name] = value
             self.data.append(row)
-        logger.info('Fetched ' + str(len(list_items)) + ' items from URL: ' + url)
+        logger.info("Fetched " + str(len(list_items)) + " items from URL: " + url)
 
-        if self._next_page_element_css_selector:
-            next_page_element = soup.select_one(self._next_page_element_css_selector)
+        if self.next_page_element_css_selector:
+            next_page_element = soup.select_one(self.next_page_element_css_selector)
             if next_page_element:
-                logger.info('Next page found: ' + next_page_element.get('href'))
-                next_page_href = next_page_element.get('href')
+                logger.info("Next page found: " + next_page_element.get("href"))
+                next_page_href = next_page_element.get("href")
                 return urljoin(url, next_page_href)
 
 
@@ -102,12 +119,14 @@ def _get_fields(fields: List[str] | dict = None) -> Optional[List[str] | List[di
     if isinstance(fields, list):
         return fields
     elif isinstance(fields, dict):
-        return [{'name': k, 'description': v} for k, v in fields.items()]
+        return [{"name": k, "description": v} for k, v in fields.items()]
     else:
         return None
 
 
-def read_list(url: str, fields: List[str] | dict = None, get_html=None, as_dataframe=True) -> DataFrame | List[dict]:
+def read_list(
+    url: str, fields: List[str] | dict = None, get_html=None, as_dataframe=True
+) -> DataFrame | List[dict]:
     """
     Reads a list of items from a webpage and returns a DataFrame.
 
@@ -118,19 +137,20 @@ def read_list(url: str, fields: List[str] | dict = None, get_html=None, as_dataf
         as_dataframe (bool): Whether to return the extracted data as a DataFrame. Defaults to True.
 
     Returns:
-        DataFrame: A DataFrame containing the extracted data.
+        DataFrame | List[dict]: A DataFrame containing the extracted data if as_dataframe is True, otherwise a list of
+        dictionaries.
 
     """
     spider = ListSpider(url=url, fields=_get_fields(fields), get_html=get_html)
-    spider.crawl(url)
+    spider.crawl()
     if as_dataframe:
         return DataFrame(spider.data)
     else:
         return spider.data
 
 
-if __name__ == '__main__':
-    df = read_list('https://quotes.toscrape.com')
+if __name__ == "__main__":
+    df = read_list("https://quotes.toscrape.com")
     print(df)
     # df = read_list('https://36kr.com/', [
     #     'title',
