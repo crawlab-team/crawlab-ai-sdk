@@ -33,7 +33,7 @@ def crawl_list(args):
     if args.output:
         df.to_csv(args.output)
     else:
-        print(tabulate(df, headers='keys', tablefmt='psql'))
+        print(tabulate(df, headers="keys", tablefmt="psql"))
 
 
 def crawl_article(args):
