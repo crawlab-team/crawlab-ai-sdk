@@ -38,5 +38,8 @@ def crawl_list(args):
 
 def crawl_article(args):
     data = read_article(args.url)
-    with open(args.output, "w") as f:
-        f.write(json.dumps(data))
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(json.dumps(data))
+    else:
+        print(json.dumps(data, indent=2))

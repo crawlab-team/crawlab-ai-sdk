@@ -35,7 +35,6 @@ class ListSpider(BaseSpider):
         self.url = url
         self.fields = fields
         self.data = []
-        self.fetch_rules()
 
     @property
     def list_element_css_selector(self):
@@ -59,9 +58,9 @@ class ListSpider(BaseSpider):
                 "fields": self.fields,
             },
         )
+        res.raise_for_status()
+
         data = res.json()
-        if res.status_code != 200:
-            raise Exception("Failed to fetch rules for URL: " + self.url)
         self.rules = data["model_list"][0]
         logger.info("Rules fetched successfully for URL: " + self.url)
         logger.info("List element CSS selector: " + self.list_element_css_selector)
@@ -72,6 +71,7 @@ class ListSpider(BaseSpider):
         )
 
     def crawl(self):
+        self.fetch_rules()
         futures = []
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures.append(executor.submit(self._fetch_data, self.url))
@@ -125,8 +125,12 @@ def _get_fields(fields: List[str] | dict = None) -> Optional[List[str] | List[di
 
 
 def read_list(
-    url: str, fields: List[str] | dict = None, get_html=None, as_dataframe=True
-) -> DataFrame | List[dict]:
+    url: str,
+    fields: List[str] | dict = None,
+    get_html=None,
+    as_dataframe=True,
+    return_rules=False,
+) -> DataFrame | List[dict] | tuple[DataFrame | List[dict], dict]:
     """
     Reads a list of items from a webpage and returns a DataFrame.
 
@@ -135,18 +139,29 @@ def read_list(
         fields (List[str] | dict): A list of fields to be extracted from each list element.
         get_html (function): A function to fetch the HTML content of a webpage. Defaults to the requests library.
         as_dataframe (bool): Whether to return the extracted data as a DataFrame. Defaults to True.
+        return_rules (bool): Whether to return the rules used for extraction. Defaults to False.
 
     Returns:
-        DataFrame | List[dict]: A DataFrame containing the extracted data if as_dataframe is True, otherwise a list of
-        dictionaries.
+        DataFrame | List[dict] | tuple[DataFrame | List[dict], dict]: The extracted data as a DataFrame or a list of
+        dictionaries. If return_rules is True, a tuple containing the data and the rules used for extraction is
+        returned.
 
     """
     spider = ListSpider(url=url, fields=_get_fields(fields), get_html=get_html)
     spider.crawl()
     if as_dataframe:
-        return DataFrame(spider.data)
+        return_data = DataFrame(spider.data)
     else:
-        return spider.data
+        return_data = spider.data
+    if return_rules:
+        return return_data, spider.rules
+    return return_data
+
+
+def extract_list_rules(url: str, fields: List[str] | dict = None) -> dict:
+    spider = ListSpider(url=url, fields=_get_fields(fields))
+    spider.fetch_rules()
+    return spider.rules
 
 
 if __name__ == "__main__":

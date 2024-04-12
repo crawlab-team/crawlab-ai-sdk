@@ -70,6 +70,8 @@ class ScrapyListSpider(BaseSpider):
                 "fields": self.fields,
             },
         )
+        res.raise_for_status()
+
         data = res.json()
         self._list_element_css_selector = data["model_list"][0]["list_model"][
             "list_element_css_selector"
