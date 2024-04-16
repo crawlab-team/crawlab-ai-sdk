@@ -5,7 +5,7 @@ from crawlab_ai.utils.auth import get_token
 
 def setup_codegen_parser(subparsers):
     codegen_parser = subparsers.add_parser(
-        "gen_code", help="Generate crawler code for a webpage"
+        "codegen", help="Generate crawler code for a webpage"
     )
     codegen_parser.add_argument("url", help="URL to generate code for")
     codegen_parser.add_argument(
