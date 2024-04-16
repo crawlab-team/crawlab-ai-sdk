@@ -16,6 +16,7 @@ setup(
     author_email="tikazyq@163.com",
     description="SDK for Crawlab AI",
     long_description=long_description,
+    long_description_content_type="text/markdown",
     package_dir={"crawlab_ai": "crawlab_ai"},
     keywords=["crawlab", "ai"],
     install_requires=install_requires,
