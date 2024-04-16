@@ -15,5 +15,5 @@ def config(args):
     if args.token:
         set_token(args.token)
 
-    if args.url:
-        set_api_endpoint(args.url)
+    # if args.url:
+    #     set_api_endpoint(args.url)
