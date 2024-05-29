@@ -31,17 +31,17 @@ class ScrapyListSpider(BaseSpider):
                 {
                     'name': 'author',
                     'element_css_selector': '.author',
-                    'is_text': True,
+                    'type': 'text',
                 },
                 {
                     'name': 'quote',
                     'element_css_selector': '.text',
-                    'is_text': True,
+                    'type': 'text',
                 },
                 {
                     'name': 'tags',
                     'element_css_selector': '.tag',
-                    'is_text': True,
+                    'type': 'text',
                 },
             ]
 
@@ -94,7 +94,7 @@ class ScrapyListSpider(BaseSpider):
             data = {}
             for field in self._fields:
                 name = field["name"]
-                if field["is_text"]:
+                if field["type"] == "text":
                     selector = field["element_css_selector"] + "::text"
                 else:
                     selector = (

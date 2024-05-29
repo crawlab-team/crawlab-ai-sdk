@@ -99,7 +99,7 @@ class ListSpider(BaseSpider):
                 field_element = item.select_one(field["element_css_selector"])
                 if not field_element:
                     continue
-                if field["is_text"]:
+                if field["type"] == "text":
                     value = field_element.text.strip()
                 else:
                     value = field_element.get(field["attribute"])

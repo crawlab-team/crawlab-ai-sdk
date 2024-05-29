@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
-with open('README.md', 'r') as f:
+with open("README.md", "r") as f:
     long_description = f.read()
 
-with open('requirements.txt', 'r') as f:
-    install_requires = f.read().split('\n')
+with open("requirements.txt", "r") as f:
+    install_requires = f.read().split("\n")
 
 setup(
     name="crawlab-ai",
-    version="0.0.9",
+    version="0.0.10",
     packages=find_packages(),
     url="https://github.com/crawlab-team/crawlab-ai-sdk",
     license="MIT",
