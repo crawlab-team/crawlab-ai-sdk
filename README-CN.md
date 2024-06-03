@@ -6,7 +6,7 @@
 
 ```bash
 pip install crawlab-ai
-
+```
 ## 先决条件
 使用此SDK需要API令牌。您可以从[Crawlab官方网站](https://dev.crawlab.io/ai)获取API令牌。
 ## 使用方法
@@ -37,5 +37,4 @@ class MySpider(ScrapyListSpider):
 然后运行爬虫：
 ```bash
 scrapy crawl my_spider
-```
 ```
